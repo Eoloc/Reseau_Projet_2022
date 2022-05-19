@@ -6,64 +6,65 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @ServerEndpoint(
-        value="/chat/{username}",
+        value="/",
         decoders = MessageDecoder.class,
         encoders = MessageEncoder.class )
 public class WebSocketServer {
     private Session session;
     private static Set<WebSocketServer> webSocketServer = new CopyOnWriteArraySet<>();
-    private static HashMap<String, String> users = new HashMap<>();
+    private static HashMap<String, Boolean> users = new HashMap<>();
     private ServerController serverController = new ServerController();;
 
-    @OnOpen
-    public void onOpen(Session session, @PathParam("username") String username) throws IOException, EncodeException {
+    @OnOpen // Quand un client arrive
+    public void onOpen(Session session) throws IOException, EncodeException {
         this.session = session;
         webSocketServer.add(this);
-        users.put(session.getId(), username);
-
-        Message message = new Message();
-        message.setFrom(username);
-        message.setContent("Connected!");
-        broadcast(message);
+        users.put(session.getId(), false);
     }
 
     @OnMessage
-    public void onMessage(Session session, Message message) throws IOException, EncodeException {
+    public void onMessage(Session session, String str) throws IOException, EncodeException {
+        String[] strSend = str.split("\r?\n|\r");
 
-        message.setFrom(users.get(session.getId()));
-        broadcast(message);
+        if(strSend[0].equals("CONNECT")){
+            // TODO DEMANDE DE CONNEXION + ENVOYER QU'IL EST BIEN CONNECTE
+            users = serverController.connect(users, session, strSend[1], strSend[2]);
+        }
+
+        if(users.get(session.getId())){ // On regarde si il a bien fait la connexion avant autre chose
+            if(strSend[0].equals("SEND")){
+                serverController.send(users, session);
+            }
+            if(strSend[0].equals("SUBSCRIBE")){
+                serverController.subscribe(users, session);
+            }
+            if(strSend[0].equals("UNSUBSCRIBE")){
+                serverController.unsubscribe(users, session);
+            }
+            if(strSend[0].equals("DISCONNECT")){
+                serverController.disconnect(users, session);
+            }
+        }
+
+
     }
 
-    @OnClose
+    @OnClose // Quand un client part
     public void onClose(Session session) throws IOException, EncodeException {
+        users.remove(session.getId());
         webSocketServer.remove(this);
-        Message message = new Message();
-        message.setFrom(users.get(session.getId()));
-        message.setContent("Disconnected!");
-        broadcast(message);
     }
 
     @OnError
     public void onError(Session session, Throwable throwable) {
         // Do error handling here
-    }
-
-    private static void broadcast(Message message) throws IOException, EncodeException {
-
-        webSocketServer.forEach(endpoint -> {
-            synchronized (endpoint) {
-                try {
-                    endpoint.session.getBasicRemote().sendObject(message);
-                } catch (IOException | EncodeException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        // Useless ?????
     }
 
     public ServerController getServerController() {
@@ -72,5 +73,9 @@ public class WebSocketServer {
 
     public void setServerController(ServerController serverController) {
         this.serverController = serverController;
+    }
+
+    public Session getSession() {
+        return session;
     }
 }

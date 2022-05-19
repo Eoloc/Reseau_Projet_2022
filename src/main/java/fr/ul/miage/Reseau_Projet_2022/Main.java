@@ -17,7 +17,7 @@ public class Main {
     private static void runServer() {
         Server webSocketServer = null;
         try {
-            webSocketServer = new Server("127.0.0.1", 9999, "/websocket",  WebSocketServer.class);
+            webSocketServer = new Server("127.0.0.1", 9999, "",  WebSocketServer.class);
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             try {
