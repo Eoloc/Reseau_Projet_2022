@@ -32,7 +32,17 @@ public class WebSocketServer {
 
     @OnMessage
     public void onMessage(Session session, String str) throws IOException, EncodeException {
-        String[] strSend = str.split("\r?\n|\r");
+        String[] strSendWithSpace = str.split("\r?\n|\r");
+        String[] strSend = new String[strSendWithSpace.length];
+        int index = 0;
+        for (String s : strSendWithSpace) {
+            if (!s.isEmpty()) {
+                strSend[index] = s;
+                index++;
+            }
+        }
+
+
 
         if(strSend[0].equals("CONNECT")){
             // TODO DEMANDE DE CONNEXION + ENVOYER QU'IL EST BIEN CONNECTE
@@ -56,7 +66,7 @@ public class WebSocketServer {
                 historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("DISCONNECT")){
-                serverController.disconnect(users, session, str[1]);
+                serverController.disconnect(users, session, strSend[1]);
             }
         }
     }
