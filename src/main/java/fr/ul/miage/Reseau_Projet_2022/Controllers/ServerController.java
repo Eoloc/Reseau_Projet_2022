@@ -6,6 +6,7 @@ import fr.ul.miage.Reseau_Projet_2022.Models.WebSocketServer;
 import javax.websocket.EncodeException;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -21,7 +22,7 @@ public class ServerController {
             host:stomp.github.org
             ^@
 
-            Si la frame est correct on retourne au client le message :
+            Si la frame est correct on envoie au client le message :
 
             CONNECTED
             version:1.2
@@ -35,7 +36,7 @@ public class ServerController {
         return users;
     }
 
-    public void send(HashMap<String, Boolean> users, Session session) {
+    public void send(HashMap<String, ArrayList<String>> topics, HashMap<String, ArrayList<Session>> subscribers, Session session) {
         /*
             Ce que le client va envoyer :
 
@@ -44,6 +45,7 @@ public class ServerController {
             content-type:text/plain
 
             hello queue a
+
             ^@
 
             Notes :
@@ -109,7 +111,7 @@ public class ServerController {
          */
     }
 
-    public void subscribe(HashMap<String, Boolean> users, Session session) {
+    public void subscribe(HashMap<String, ArrayList<Session>> subscribers, Session session, String strId, String strDestination, String strAck) {
         /*
             Ce que le client va envoyer :
 
@@ -131,9 +133,10 @@ public class ServerController {
 
             Si erreur, on doit retourner un message d'erreur (voir methode send)
          */
+
     }
 
-    public void unsubscribe(HashMap<String, Boolean> users, Session session) {
+    public void unsubscribe(HashMap<String, ArrayList<Session>> subscribers, Session session) {
         /*
             Ce que le client va envoyer :
 
