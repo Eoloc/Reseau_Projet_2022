@@ -41,7 +41,9 @@ public class WebSocketServer {
 
         if(users.get(session.getId())){ // On regarde si il a bien fait la connexion avant autre chose
             if(strSend[0].equals("SEND")){
-                serverController.send(topics, subscribers, session);
+                ArrayList<HashMap> listeMaps = serverController.send(topics, subscribers, session, strSend[1],strSend[2],strSend[3]);
+                this.topics = listeMaps.get(0);
+                this.topics = listeMaps.get(1);
             }
             if(strSend[0].equals("SUBSCRIBE")){
                 ArrayList<HashMap> listeMaps = serverController.subscribe(subscribers, historiqueSubscribers, session, strSend[1], strSend[2], strSend[3]);

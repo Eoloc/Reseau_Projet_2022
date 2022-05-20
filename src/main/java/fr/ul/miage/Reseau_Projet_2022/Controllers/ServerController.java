@@ -37,8 +37,93 @@ public class ServerController {
         return users;
     }
 
-    public void send(HashMap<String, ArrayList<String>> topics, HashMap<String, ArrayList<Session>> subscribers, Session session) {
-        /*
+    public ArrayList<HashMap> send(HashMap<String, ArrayList<String>> topics, HashMap<String, ArrayList<Session>> subscribers, Session session, String strDestination, String strContentType, String strMessage) throws IOException {
+        
+    	
+    	String destination = strDestination.substring(12);
+    	String contentType = strContentType.substring(13);
+    	String message = 
+    			"MESSAGE\n"+
+                "subscription:0\n"+
+                "message-id:"+topics.get(destination).size()+1+"\n"+
+                "destination:/queue/a\n"+
+                "content-type:text/plain\n"+
+                "hello queue a^@";
+    	
+    	String receipt = 
+    			"RECEIPT\n"+
+                "receipt-id:message-007\n"+
+
+                "^@";
+    	
+    	String errorStructure =
+    			"ERROR\n"+
+                "receipt-id:"+topics.get(destination).size()+1+"\n"+
+                "content-type:"+contentType+"\n"+
+                "content-length:"+strMessage.length()+"\n"+
+                "message:malformed frame received\n"+
+
+                "The message:\n"+
+                "-----\n"+
+                "MESSAGE\n"+
+                "destined:"+strMessage+"\n"+
+                "receipt:"+topics.get(destination).size()+1+"\n"+
+
+                "Hello queue a!\n"+
+                "-----\n"+
+                "Did not contain a destination header, which is REQUIRED\n"+
+                "for message propagation.\n"+
+                "^@";
+    	
+    	String errorMessage =
+    			"ERROR\n"+
+                "receipt-id:"+topics.get(destination).size()+1+"\n"+
+                "content-type:"+contentType+"\n"+
+                "content-length:"+strMessage.length()+"\n"+
+                "message:message content empty\n"+
+
+                "The message:\n"+
+                "-----\n"+
+                "MESSAGE\n"+
+                "destined:"+destination+"\n"+
+                "receipt:"+topics.get(destination).size()+1+"\n"+
+
+                strMessage+"\n"+
+                "-----\n"+
+                "Did not contain a message, which is REQUIRED\n"+
+                "for message propagation.\n"+
+                "^@";
+    	
+    	ArrayList<HashMap> listeMaps = new ArrayList<HashMap>();
+    	
+    	if(topics.keySet().contains(destination)) {
+    		if(contentType.equals("text/plain")) {
+    			topics.get(destination).add(strMessage);
+				session.getBasicRemote().sendText(receipt);
+				for(Session s:subscribers.get(destination)) {
+					s.getBasicRemote().sendText(message);
+				}
+    		} else {
+    			session.getBasicRemote().sendText(errorStructure);
+    		}
+    	}else {
+    		if(contentType.equals("text/plain")) {
+        		ArrayList<String> messages = new ArrayList<String>();
+        		messages.add(strMessage);
+        		topics.put(destination, messages);
+        		subscribers.put(destination,new ArrayList<Session>());
+        		session.getBasicRemote().sendText(receipt);
+    		} else {
+    			session.getBasicRemote().sendText(errorStructure);
+    		}
+    	}
+    	
+    	listeMaps.add(topics);
+    	listeMaps.add(subscribers);
+    	return listeMaps;
+    	
+    	
+    	/*
             Ce que le client va envoyer :
 
             SEND
