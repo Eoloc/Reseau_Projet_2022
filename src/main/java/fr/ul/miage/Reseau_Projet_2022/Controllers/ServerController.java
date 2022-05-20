@@ -47,7 +47,14 @@ public class ServerController {
             System.out.println("Mauvais host");
             return users;
         }
-
+        try {
+            session.getBasicRemote().sendText("CONNECTED\n" +
+                    "            version:1.2\n" +
+                    "            ^@\n");
+            users.replace(session.getId(), true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return users;
     }
 
