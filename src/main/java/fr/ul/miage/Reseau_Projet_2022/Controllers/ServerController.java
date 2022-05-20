@@ -49,8 +49,8 @@ public class ServerController {
         }
         try {
             session.getBasicRemote().sendText("CONNECTED\n" +
-                    "            version:1.2\n" +
-                    "            ^@\n");
+                    "version:1.2\n" +
+                    "^@\n");
             users.replace(session.getId(), true);
         } catch (IOException e) {
             e.printStackTrace();
@@ -377,7 +377,7 @@ public class ServerController {
         return listeMaps;
     }
 
-    public void disconnect(HashMap<String, Boolean> users, Session session) {
+    public void disconnect(HashMap<String, Boolean> users, Session session, String frame) {
         /*
             Ce que le client va envoyer :
 
@@ -395,6 +395,19 @@ public class ServerController {
 
             Si erreur, on doit retourner un message d'erreur (voir methode send)
          */
+
+        if (!frame.equals("receipt-id:77")) {
+
+        }
+
+        try {
+            session.getBasicRemote().sendText("RECEIPT\n" +
+                    "            receipt-id:77\n" +
+                    "            ^@");
+            users.replace(session.getId(), false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // Envoie à tous les endpoints le message

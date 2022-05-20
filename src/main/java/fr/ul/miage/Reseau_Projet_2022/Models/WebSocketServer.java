@@ -56,7 +56,7 @@ public class WebSocketServer {
                 historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("DISCONNECT")){
-                serverController.disconnect(users, session);
+                serverController.disconnect(users, session, str[1]);
             }
         }
     }
