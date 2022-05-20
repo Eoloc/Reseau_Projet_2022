@@ -38,11 +38,18 @@ public class WebSocketServer {
 
     @OnMessage
     public void onMessage(Session session, String str) throws IOException, EncodeException {
-        String[] strSend = str.split("\r?\n|\r");
-        for(String topic : topics.keySet()){
-            System.out.println(topic);
+        String[] strSendWithSpace = str.split("\r?\n|\r");
+        String[] strSend = new String[strSendWithSpace.length];
+        int index = 0;
+        for (String s : strSendWithSpace) {
+            if (!s.isEmpty()) {
+                strSend[index] = s;
+                index++;
+            }
         }
-        System.out.println("");
+
+
+
         if(strSend[0].equals("CONNECT")){
             // TODO DEMANDE DE CONNEXION + ENVOYER QU'IL EST BIEN CONNECTE
             users = serverController.connect(users, session, strSend[1], strSend[2]);

@@ -438,18 +438,20 @@ public class ServerController {
             Si erreur, on doit retourner un message d'erreur (voir methode send)
          */
 
-        if (!frame.equals("receipt-id:77")) {
+        if (frame.equals("receipt-id:77")) {
+            try {
+                session.getBasicRemote().sendText("RECEIPT\n" +
+                        "receipt-id:77\n" +
+                        "^@");
+                users.replace(session.getId(), false);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
 
         }
 
-        try {
-            session.getBasicRemote().sendText("RECEIPT\n" +
-                    "            receipt-id:77\n" +
-                    "            ^@");
-            users.replace(session.getId(), false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
     }
 
     // Envoie à tous les endpoints le message
