@@ -32,6 +32,20 @@ public class ServerController {
 
             Si erreur, ne rien faire
          */
+
+        //La frame a forcément CONNECT car la fonction est appelée après avoir verifié que c'était le cas
+
+        //Vérification de la version
+
+        if (!version.equals("accept-version:1.2")) {
+            System.out.println("Mauvaise version renseignée");
+            return users;
+        }
+        if (!host.equals("host:127.0.0.1:9999")) {
+            System.out.println("Mauvais host");
+            return users;
+        }
+
         return users;
     }
 
