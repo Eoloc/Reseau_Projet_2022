@@ -46,13 +46,13 @@ public class ServerController {
     			"MESSAGE\n"+
                 "subscription:0\n"+
                 "message-id:"+topics.get(destination).size()+1+"\n"+
-                "destination:/queue/a\n"+
-                "content-type:text/plain\n"+
-                "hello queue a^@";
+                "destination:"+destination+"\n"+
+                "content-type:"+contentType+"\n"+
+                strMessage;
     	
     	String receipt = 
     			"RECEIPT\n"+
-                "receipt-id:message-007\n"+
+                "receipt-id:"+topics.get(destination).size()+1+"\n"+
 
                 "^@";
     	
