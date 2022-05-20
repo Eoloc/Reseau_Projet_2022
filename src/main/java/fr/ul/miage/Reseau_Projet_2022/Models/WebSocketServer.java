@@ -3,7 +3,6 @@ package fr.ul.miage.Reseau_Projet_2022.Models;
 import fr.ul.miage.Reseau_Projet_2022.Controllers.ServerController;
 
 import javax.websocket.*;
-import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +18,10 @@ public class WebSocketServer {
     private Session session;
     private static Set<WebSocketServer> webSocketServer = new CopyOnWriteArraySet<>();
     private static HashMap<String, Boolean> users = new HashMap<>();
-    private ServerController serverController = new ServerController();;
+    private ServerController serverController = new ServerController();
+    private HashMap<String, ArrayList<String>> topics = new HashMap<>();
+    private HashMap<String, ArrayList<Session>> subscribers = new HashMap<>();
+    private HashMap<Integer, CoupleDestinationSession> historiqueSubscribers = new HashMap<>();
 
     @OnOpen // Quand un client arrive
     public void onOpen(Session session) throws IOException, EncodeException {
@@ -39,20 +41,24 @@ public class WebSocketServer {
 
         if(users.get(session.getId())){ // On regarde si il a bien fait la connexion avant autre chose
             if(strSend[0].equals("SEND")){
-                serverController.send(users, session);
+                ArrayList<HashMap> listeMaps = serverController.send(topics, subscribers, session, strSend[1],strSend[2],strSend[3]);
+                this.topics = listeMaps.get(0);
+                this.subscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("SUBSCRIBE")){
-                serverController.subscribe(users, session);
+                ArrayList<HashMap> listeMaps = serverController.subscribe(subscribers, historiqueSubscribers, session, strSend[1], strSend[2], strSend[3]);
+                subscribers = listeMaps.get(0);
+                historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("UNSUBSCRIBE")){
-                serverController.unsubscribe(users, session);
+                ArrayList<HashMap> listeMaps = serverController.unsubscribe(subscribers, historiqueSubscribers, session, strSend[1]);
+                subscribers = listeMaps.get(0);
+                historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("DISCONNECT")){
                 serverController.disconnect(users, session);
             }
         }
-
-
     }
 
     @OnClose // Quand un client part
