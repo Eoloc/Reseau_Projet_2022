@@ -19,8 +19,9 @@ public class WebSocketServer {
     private static Set<WebSocketServer> webSocketServer = new CopyOnWriteArraySet<>();
     private static HashMap<String, Boolean> users = new HashMap<>();
     private ServerController serverController = new ServerController();
-    private HashMap<String, ArrayList<String>> topics = new HashMap<>();;
-    private HashMap<String, ArrayList<Session>> subscribers = new HashMap<>();;
+    private HashMap<String, ArrayList<String>> topics = new HashMap<>();
+    private HashMap<String, ArrayList<Session>> subscribers = new HashMap<>();
+    private HashMap<Integer, CoupleDestinationSession> historiqueSubscribers = new HashMap<>();
 
     @OnOpen // Quand un client arrive
     public void onOpen(Session session) throws IOException, EncodeException {
@@ -43,10 +44,14 @@ public class WebSocketServer {
                 serverController.send(topics, subscribers, session);
             }
             if(strSend[0].equals("SUBSCRIBE")){
-                serverController.subscribe(subscribers, session, strSend[1], strSend[2], strSend[3]);
+                ArrayList<HashMap> listeMaps = serverController.subscribe(subscribers, historiqueSubscribers, session, strSend[1], strSend[2], strSend[3]);
+                subscribers = listeMaps.get(0);
+                historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("UNSUBSCRIBE")){
-                serverController.unsubscribe(subscribers, session);
+                ArrayList<HashMap> listeMaps = serverController.unsubscribe(subscribers, historiqueSubscribers, session, strSend[1]);
+                subscribers = listeMaps.get(0);
+                historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("DISCONNECT")){
                 serverController.disconnect(users, session);

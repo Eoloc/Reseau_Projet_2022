@@ -1,5 +1,6 @@
 package fr.ul.miage.Reseau_Projet_2022.Controllers;
 
+import fr.ul.miage.Reseau_Projet_2022.Models.CoupleDestinationSession;
 import fr.ul.miage.Reseau_Projet_2022.Models.Message;
 import fr.ul.miage.Reseau_Projet_2022.Models.WebSocketServer;
 
@@ -111,14 +112,14 @@ public class ServerController {
          */
     }
 
-    public void subscribe(HashMap<String, ArrayList<Session>> subscribers, Session session, String strId, String strDestination, String strAck) {
+    public ArrayList<HashMap> subscribe(HashMap<String, ArrayList<Session>> subscribers, HashMap<Integer, CoupleDestinationSession> historiqueSubscribers, Session session, String strId, String strDestination, String strAck) throws IOException {
         /*
             Ce que le client va envoyer :
 
             SUBSCRIBE
             id:0
             destination:/queue/foo
-            ack:client              ?????? On garde le ack ??????
+            ack:client
             ^@
 
             Si la frame est correct on retourne au client le message :
@@ -133,10 +134,63 @@ public class ServerController {
 
             Si erreur, on doit retourner un message d'erreur (voir methode send)
          */
-
+        int id = Integer.parseInt(strId.substring(3));
+        String destination = strDestination.substring(12);
+        String response = "";
+        if(subscribers.containsKey(destination)){ // topic existe
+            if(!subscribers.get(destination).contains(session)){ // l'utilisateur n'est pas dans les subscribers
+                if(historiqueSubscribers.containsKey(id)){ // L'id de subscribe est déjà dans l'historique
+                    response = "ERROR\n" +
+                            "receipt-id:subscribe-" + id + "\n" +
+                            "message:id already exist\n" +
+                            "The message:\n" +
+                            "-----\n" +
+                            "SUBSCRIBE\n" +
+                            strId + "\n" +
+                            strDestination + "\n" +
+                            strAck + "\n" +
+                            "-----\n" +
+                            "^@\n";
+                } else {
+                    subscribers.get(destination).add(session);
+                    CoupleDestinationSession cds = new CoupleDestinationSession(session, destination);
+                    historiqueSubscribers.put(id, cds);
+                    response = "RECEIPT\nreceipt-id:subscribe-"+ id +"\n^@";
+                }
+            } else {
+                response = "ERROR\n" +
+                        "receipt-id:subscribe-" + id + "\n" +
+                        "message:subscriber already exist for this topic\n" +
+                        "The message:\n" +
+                        "-----\n" +
+                        "SUBSCRIBE\n" +
+                        strId + "\n" +
+                        strDestination + "\n" +
+                        strAck + "\n" +
+                        "-----\n" +
+                        "^@\n";
+            }
+        } else {
+            response = "ERROR\n" +
+                    "receipt-id:subscribe-" + id + "\n" +
+                    "message:topic not found\n" +
+                    "The message:\n" +
+                    "-----\n" +
+                    "SUBSCRIBE\n" +
+                    strId + "\n" +
+                    strDestination + "\n" +
+                    strAck + "\n" +
+                    "-----\n" +
+                    "^@\n";
+        }
+        session.getBasicRemote().sendText(response);
+        ArrayList<HashMap> listeMaps = new ArrayList<>();
+        listeMaps.add(subscribers);
+        listeMaps.add(historiqueSubscribers);
+        return listeMaps;
     }
 
-    public void unsubscribe(HashMap<String, ArrayList<Session>> subscribers, Session session) {
+    public ArrayList<HashMap> unsubscribe(HashMap<String, ArrayList<Session>> subscribers, HashMap<Integer, CoupleDestinationSession> historiqueSubscribers, Session session, String strId) throws IOException {
         /*
             Ce que le client va envoyer :
 
@@ -158,6 +212,54 @@ public class ServerController {
 
             Si erreur, on doit retourner un message d'erreur (voir methode send)
          */
+        int id = Integer.parseInt(strId.substring(3));
+        String response = "";
+        if(historiqueSubscribers.containsKey(id)) { // L'id de subscribe est déjà dans l'historique
+            CoupleDestinationSession cds = historiqueSubscribers.get(id);
+            if(subscribers.containsKey(cds.getDestination())) { // topic existe
+                if(subscribers.get(cds.getDestination()).contains(session)) { // l'utilisateur est dans les subscribers
+                    historiqueSubscribers.remove(id);
+                    subscribers.get(cds.getDestination()).remove(cds.getSession());
+                    response = "RECEIPT\nreceipt-id:unsubscribe-"+ id +"\n^@";
+                } else {
+                    response = "ERROR\n" +
+                            "receipt-id:unsubscribe-" + id + "\n" +
+                            "message:subscriber not found to topic\n" +
+                            "The message:\n" +
+                            "-----\n" +
+                            "UNSUBSCRIBE\n" +
+                            strId + "\n" +
+                            "-----\n" +
+                            "^@\n";
+                }
+            } else {
+                response = "ERROR\n" +
+                        "receipt-id:unsubscribe-" + id + "\n" +
+                        "message:topic not found\n" +
+                        "The message:\n" +
+                        "-----\n" +
+                        "UNSUBSCRIBE\n" +
+                        strId + "\n" +
+                        "-----\n" +
+                        "^@\n";
+            }
+        } else {
+            response = "ERROR\n" +
+                    "receipt-id:unsubscribe-" + id + "\n" +
+                    "message:subscription not found to id\n" +
+                    "The message:\n" +
+                    "-----\n" +
+                    "UNSUBSCRIBE\n" +
+                    strId + "\n" +
+                    "-----\n" +
+                    "^@\n";
+        }
+
+        session.getBasicRemote().sendText(response);
+        ArrayList<HashMap> listeMaps = new ArrayList<>();
+        listeMaps.add(subscribers);
+        listeMaps.add(historiqueSubscribers);
+        return listeMaps;
     }
 
     public void disconnect(HashMap<String, Boolean> users, Session session) {
