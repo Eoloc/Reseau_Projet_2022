@@ -19,9 +19,15 @@ public class WebSocketServer {
     private static Set<WebSocketServer> webSocketServer = new CopyOnWriteArraySet<>();
     private static HashMap<String, Boolean> users = new HashMap<>();
     private ServerController serverController = new ServerController();
-    private HashMap<String, ArrayList<String>> topics = new HashMap<>();
-    private HashMap<String, ArrayList<Session>> subscribers = new HashMap<>();
-    private HashMap<Integer, CoupleDestinationSession> historiqueSubscribers = new HashMap<>();
+    private static HashMap<String, ArrayList<String>> topics = new HashMap<>();
+    private static HashMap<String, ArrayList<Session>> subscribers = new HashMap<>();
+    private static HashMap<Integer, CoupleDestinationSession> historiqueSubscribers = new HashMap<>();
+
+    /*public WebSocketServer(){
+        if(topics == null) topics = new HashMap<>();
+        if(subscribers == null) subscribers = new HashMap<>();
+        if(historiqueSubscribers == null) historiqueSubscribers = new HashMap<>();
+    }*/
 
     @OnOpen // Quand un client arrive
     public void onOpen(Session session) throws IOException, EncodeException {
@@ -33,7 +39,10 @@ public class WebSocketServer {
     @OnMessage
     public void onMessage(Session session, String str) throws IOException, EncodeException {
         String[] strSend = str.split("\r?\n|\r");
-
+        for(String topic : topics.keySet()){
+            System.out.println(topic);
+        }
+        System.out.println("");
         if(strSend[0].equals("CONNECT")){
             // TODO DEMANDE DE CONNEXION + ENVOYER QU'IL EST BIEN CONNECTE
             users = serverController.connect(users, session, strSend[1], strSend[2]);
@@ -56,7 +65,7 @@ public class WebSocketServer {
                 historiqueSubscribers = listeMaps.get(1);
             }
             if(strSend[0].equals("DISCONNECT")){
-                serverController.disconnect(users, session, str[1]);
+                serverController.disconnect(users, session, strSend[1]);
             }
         }
     }
