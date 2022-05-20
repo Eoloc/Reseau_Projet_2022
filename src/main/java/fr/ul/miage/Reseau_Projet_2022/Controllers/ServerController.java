@@ -48,7 +48,8 @@ public class ServerController {
                 "message-id:"+topics.get(destination).size()+1+"\n"+
                 "destination:"+destination+"\n"+
                 "content-type:"+contentType+"\n"+
-                strMessage;
+                strMessage+
+                "^@";
     	
     	String receipt = 
     			"RECEIPT\n"+
@@ -69,7 +70,7 @@ public class ServerController {
                 "destined:"+strMessage+"\n"+
                 "receipt:"+topics.get(destination).size()+1+"\n"+
 
-                "Hello queue a!\n"+
+                strMessage+"\n"+
                 "-----\n"+
                 "Did not contain a destination header, which is REQUIRED\n"+
                 "for message propagation.\n"+
@@ -98,21 +99,29 @@ public class ServerController {
     	
     	if(topics.keySet().contains(destination)) {
     		if(contentType.equals("text/plain")) {
-    			topics.get(destination).add(strMessage);
-				session.getBasicRemote().sendText(receipt);
-				for(Session s:subscribers.get(destination)) {
-					s.getBasicRemote().sendText(message);
-				}
+    			if(strMessage != "") {
+    				topics.get(destination).add(message);
+    				session.getBasicRemote().sendText(receipt);
+    				for(Session s:subscribers.get(destination)) {
+    					s.getBasicRemote().sendText(message);
+    				}
+    			}else {
+    				session.getBasicRemote().sendText(errorMessage);
+    			}
     		} else {
     			session.getBasicRemote().sendText(errorStructure);
     		}
     	}else {
     		if(contentType.equals("text/plain")) {
-        		ArrayList<String> messages = new ArrayList<String>();
-        		messages.add(strMessage);
-        		topics.put(destination, messages);
-        		subscribers.put(destination,new ArrayList<Session>());
-        		session.getBasicRemote().sendText(receipt);
+    			if(strMessage != "") {
+    				ArrayList<String> messages = new ArrayList<String>();
+            		messages.add(message);
+            		topics.put(destination, messages);
+            		subscribers.put(destination,new ArrayList<Session>());
+            		session.getBasicRemote().sendText(receipt);
+    			} else {
+    				session.getBasicRemote().sendText(errorMessage);
+    			}
     		} else {
     			session.getBasicRemote().sendText(errorStructure);
     		}
