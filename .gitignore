@@ -1,3 +1,6 @@
 .idea
 Reseau_Projet_2022.iml
 target
+Application_Reseau/.idea
+Application_Reseau/Application_Reseau.iml
+Application_Reseau/target
