@@ -467,4 +467,13 @@ public class ServerController {
             }
         });
     }
+
+    public String getAllTopics(HashMap<String, ArrayList<String>> topics) {
+        String res = "RECEIPT\n";
+        for(String topic : topics.keySet()){
+            res = res + topic + "\n";
+        }
+        res = res + "^@";
+        return res;
+    }
 }

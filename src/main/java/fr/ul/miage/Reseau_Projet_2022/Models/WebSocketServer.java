@@ -74,6 +74,12 @@ public class WebSocketServer {
             if(strSend[0].equals("DISCONNECT")){
                 serverController.disconnect(users, session, strSend[1]);
             }
+            if(strSend[0].equals("FUNCTION")){
+                if(strSend[1].equals("getAllTopics")){
+                    String allTopics = serverController.getAllTopics(topics);
+                    session.getBasicRemote().sendText(allTopics);
+                }
+            }
         }
     }
 
