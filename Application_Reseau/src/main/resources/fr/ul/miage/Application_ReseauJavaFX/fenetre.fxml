@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.ul.miage.Application_ReseauJavaFX.Application_ReseauController">
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.ul.miage.Application_ReseauJavaFX.Application_ReseauController">
    <center>
       <BorderPane prefHeight="700.0" prefWidth="600.0" BorderPane.alignment="CENTER">
          <top>
@@ -22,6 +30,9 @@
                         </ComboBox>
                         <Button fx:id="btn_Actualisation" mnemonicParsing="false" onAction="#actualiserTopics" text="Actualiser liste" />
                      </children>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </VBox.margin>
                   </HBox>
                   <Button fx:id="btn_aboDesabo" mnemonicParsing="false" onAction="#subscribe" text="S'abonner">
                      <VBox.margin>
@@ -33,11 +44,24 @@
                         <Insets bottom="5.0" left="5.0" right="5.0" />
                      </VBox.margin>
                   </TextArea>
-                  <Button fx:id="btn_EnvoiMessage" mnemonicParsing="false" onAction="#send" text="Envoyer message">
+                  <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
                      <VBox.margin>
-                        <Insets bottom="15.0" />
+                        <Insets bottom="5.0" />
                      </VBox.margin>
-                  </Button>
+                     <children>
+                        <Label text="Topic sélectionnée :">
+                           <HBox.margin>
+                              <Insets right="5.0" />
+                           </HBox.margin>
+                        </Label>
+                        <TextField fx:id="sai_NomTopic">
+                           <HBox.margin>
+                              <Insets right="10.0" />
+                           </HBox.margin>
+                        </TextField>
+                        <Button fx:id="btn_EnvoiMessage" mnemonicParsing="false" onAction="#send" text="Envoyer message" />
+                     </children>
+                  </HBox>
                   <Separator prefWidth="200.0">
                      <VBox.margin>
                         <Insets bottom="10.0" />
