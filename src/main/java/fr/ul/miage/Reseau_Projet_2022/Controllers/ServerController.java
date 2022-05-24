@@ -14,31 +14,30 @@ import java.util.Set;
 public class ServerController {
     public ServerController(){ }
 
+    /*
+        Methode qui permet a un client de se connecter au serveur et de pouvoir utliser les autres frames
+
+        Ce que le client va envoyer :
+
+        CONNECT
+        accept-version:1.2
+        host:stomp.github.org
+        ^@
+
+        Si la frame est correct on envoie au client le message :
+
+        CONNECTED
+        version:1.2
+        ^@
+
+        Grace a la fonction : session.getBasicRemote().sendText("Message");
+        Puis passer dans le hashmap le boolean a true
+
+        Si erreur, ne rien faire
+     */
     public HashMap<String, Boolean> connect(HashMap<String, Boolean> users,Session session, String version, String host){
-        /*
-            Ce que le client va envoyer :
-
-            CONNECT
-            accept-version:1.2
-            host:stomp.github.org
-            ^@
-
-            Si la frame est correct on envoie au client le message :
-
-            CONNECTED
-            version:1.2
-            ^@
-
-            Grace a la fonction : session.getBasicRemote().sendText("Message");
-            Puis passer dans le hashmap le boolean a true
-
-            Si erreur, ne rien faire
-         */
-
         //La frame a forcément CONNECT car la fonction est appelée après avoir verifié que c'était le cas
-
         //Vérification de la version
-
         if (!version.equals("accept-version:1.2")) {
             System.out.println("Mauvaise version renseignée");
             return users;
@@ -58,6 +57,80 @@ public class ServerController {
         return users;
     }
 
+    /*
+        Methode qui permet d'envoyer un message a une topic, si la topic n'existe pas alors ça crée le message
+
+        Ce que le client va envoyer :
+
+        SEND
+        destination:/queue/a
+        content-type:text/plain
+
+        hello queue a
+
+        ^@
+
+        Notes :
+        This sends a message to a destination named /queue/a.
+        Note that STOMP treats this destination as an opaque string and
+        no delivery semantics are assumed by the name of a destination.
+        You should consult your STOMP server's documentation to find out
+        how to construct a destination name which gives you the delivery
+        semantics that your application needs.
+
+        Si la frame est correct on envoie à la topic le message :
+
+        MESSAGE
+        subscription:0
+        message-id:007  (Le 7ième message envoyé dans la topic ?)
+        destination:/queue/a
+        content-type:text/plain
+
+        hello queue a^@
+
+        Notes :
+        this destination header SHOULD be identical to the one used in
+        the corresponding SEND frame.
+        The MESSAGE frame MUST contain a message-id header with a unique
+        identifier for that message and a subscription header matching
+        the identifier of the subscription that is receiving the message.
+
+        Et ce message au client qui a envoyé le SEND :
+
+        RECEIPT
+        receipt-id:message-007
+
+        ^@
+
+        Notes :
+        A RECEIPT frame MUST include the header receipt-id, where the value
+        is the value of the receipt header in the frame which this is a
+        receipt for.
+
+        On envoie au client grâce à la fonction :
+        session.getBasicRemote().sendText("Message");
+
+        On peut aussi avoir plusieurs type d'erreur dont le message
+        (à modifier) est :
+
+        ERROR
+        receipt-id:message-007
+        content-type:text/plain
+        content-length:170
+        message:malformed frame received
+
+        The message:
+        -----
+        MESSAGE
+        destined:/queue/a
+        receipt:message-007
+
+        Hello queue a!
+        -----
+        Did not contain a destination header, which is REQUIRED
+        for message propagation.
+        ^@
+     */
     public ArrayList<HashMap> send(HashMap<String, ArrayList<String>> topics, HashMap<String, ArrayList<Session>> subscribers, Session session, String strDestination, String strContentType, String strMessage) throws IOException {
 
     	String destination = strDestination.substring(12);
@@ -193,104 +266,32 @@ public class ServerController {
     	listeMaps.add(topics);
     	listeMaps.add(subscribers);
     	return listeMaps;
-    	
-    	
-    	/*
-            Ce que le client va envoyer :
-
-            SEND
-            destination:/queue/a
-            content-type:text/plain
-
-            hello queue a
-
-            ^@
-
-            Notes :
-            This sends a message to a destination named /queue/a.
-            Note that STOMP treats this destination as an opaque string and
-            no delivery semantics are assumed by the name of a destination.
-            You should consult your STOMP server's documentation to find out
-            how to construct a destination name which gives you the delivery
-            semantics that your application needs.
-
-            Si la frame est correct on envoie à la topic le message :
-
-            MESSAGE
-            subscription:0
-            message-id:007  (Le 7ième message envoyé dans la topic ?)
-            destination:/queue/a
-            content-type:text/plain
-
-            hello queue a^@
-
-            Notes :
-            this destination header SHOULD be identical to the one used in
-            the corresponding SEND frame.
-            The MESSAGE frame MUST contain a message-id header with a unique
-            identifier for that message and a subscription header matching
-            the identifier of the subscription that is receiving the message.
-
-            Et ce message au client qui a envoyé le SEND :
-
-            RECEIPT
-            receipt-id:message-007
-
-            ^@
-
-            Notes :
-            A RECEIPT frame MUST include the header receipt-id, where the value
-            is the value of the receipt header in the frame which this is a
-            receipt for.
-
-            On envoie au client grâce à la fonction :
-            session.getBasicRemote().sendText("Message");
-
-            On peut aussi avoir plusieurs type d'erreur dont le message
-            (à modifier) est :
-
-            ERROR
-            receipt-id:message-007
-            content-type:text/plain
-            content-length:170
-            message:malformed frame received
-
-            The message:
-            -----
-            MESSAGE
-            destined:/queue/a
-            receipt:message-007
-
-            Hello queue a!
-            -----
-            Did not contain a destination header, which is REQUIRED
-            for message propagation.
-            ^@
-         */
     }
 
+    /*
+        Methode qui permet de s'inscrire a une topic à partir d'un nouvel id unique
+
+        Ce que le client va envoyer :
+
+        SUBSCRIBE
+        id:0
+        destination:/queue/foo
+        ack:client
+        ^@
+
+        Si la frame est correct on retourne au client le message :
+
+        RECEIPT
+        receipt-id:subscribe-0
+        ^@
+
+        Notes :
+        subscription header matching the identifier of the subscription that
+        is receiving the message.
+
+        Si erreur, on doit retourner un message d'erreur (voir methode send)
+     */
     public ArrayList<HashMap> subscribe(HashMap<String, ArrayList<Session>> subscribers, HashMap<Integer, CoupleDestinationSession> historiqueSubscribers, Session session, String strId, String strDestination, String strAck) throws IOException {
-        /*
-            Ce que le client va envoyer :
-
-            SUBSCRIBE
-            id:0
-            destination:/queue/foo
-            ack:client
-            ^@
-
-            Si la frame est correct on retourne au client le message :
-
-            RECEIPT
-            receipt-id:subscribe-0
-            ^@
-
-            Notes :
-            subscription header matching the identifier of the subscription that
-            is receiving the message.
-
-            Si erreur, on doit retourner un message d'erreur (voir methode send)
-         */
         int id = Integer.parseInt(strId.substring(3));
         String destination = strDestination.substring(12);
         String response = "";
@@ -347,28 +348,30 @@ public class ServerController {
         return listeMaps;
     }
 
+    /*
+        Methode qui permet de se désinscrire à l'aide de l'id qui a servit a s'inscrire a une topic
+
+        Ce que le client va envoyer :
+
+        UNSUBSCRIBE
+        id:0
+        ^@
+
+        Notes :
+        id header MUST be included in the frame to uniquely identify
+        the subscription to remove.
+
+        Si la frame est correct on retourne au client le message :
+
+        RECEIPT
+        receipt-id:unsubscribe-0
+        ^@
+
+        Grace a la fonction : session.getBasicRemote().sendText("Message");
+
+        Si erreur, on doit retourner un message d'erreur (voir methode send)
+     */
     public ArrayList<HashMap> unsubscribe(HashMap<String, ArrayList<Session>> subscribers, HashMap<Integer, CoupleDestinationSession> historiqueSubscribers, Session session, String strId) throws IOException {
-        /*
-            Ce que le client va envoyer :
-
-            UNSUBSCRIBE
-            id:0
-            ^@
-
-            Notes :
-            id header MUST be included in the frame to uniquely identify
-            the subscription to remove.
-
-            Si la frame est correct on retourne au client le message :
-
-            RECEIPT
-            receipt-id:unsubscribe-0
-            ^@
-
-            Grace a la fonction : session.getBasicRemote().sendText("Message");
-
-            Si erreur, on doit retourner un message d'erreur (voir methode send)
-         */
         int id = Integer.parseInt(strId.substring(3));
         String response = "";
         if(historiqueSubscribers.containsKey(id)) { // L'id de subscribe est déjà dans l'historique
@@ -419,25 +422,26 @@ public class ServerController {
         return listeMaps;
     }
 
+    /*
+        Methode qui permet de déconnecter un client
+
+        Ce que le client va envoyer :
+
+        DISCONNECT
+        receipt:77
+        ^@
+
+        Si la frame est correct on retourne au client le message :
+
+        RECEIPT
+        receipt-id:77
+        ^@
+
+        Grace a la fonction : session.getBasicRemote().sendText("Message");
+
+        Si erreur, on doit retourner un message d'erreur (voir methode send)
+     */
     public void disconnect(HashMap<String, Boolean> users, Session session, String frame) {
-        /*
-            Ce que le client va envoyer :
-
-            DISCONNECT
-            receipt:77
-            ^@
-
-            Si la frame est correct on retourne au client le message :
-
-            RECEIPT
-            receipt-id:77
-            ^@
-
-            Grace a la fonction : session.getBasicRemote().sendText("Message");
-
-            Si erreur, on doit retourner un message d'erreur (voir methode send)
-         */
-
         if (frame.equals("receipt-id:77")) {
             try {
                 session.getBasicRemote().sendText("RECEIPT\n" +
@@ -447,14 +451,10 @@ public class ServerController {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } else {
-
         }
-
-
     }
 
-    // Envoie à tous les endpoints le message
+    // Envoie à tous les endpoints le message en parametre
     public static void broadcast(Set<WebSocketServer> webSocketServer, Message message) throws IOException, EncodeException {
 
         webSocketServer.forEach(endpoint -> {
@@ -467,7 +467,9 @@ public class ServerController {
             }
         });
     }
-
+    /*
+        Methode qui renvoie la liste des noms des topics actuelles
+     */
     public String getAllTopics(HashMap<String, ArrayList<String>> topics) {
         String res = "RECEIPT\ngetAllTopics\n";
         for(String topic : topics.keySet()){

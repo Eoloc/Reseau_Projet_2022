@@ -23,19 +23,19 @@ public class WebSocketServer {
     private static HashMap<String, ArrayList<Session>> subscribers = new HashMap<>();
     private static HashMap<Integer, CoupleDestinationSession> historiqueSubscribers = new HashMap<>();
 
-    /*public WebSocketServer(){
-        if(topics == null) topics = new HashMap<>();
-        if(subscribers == null) subscribers = new HashMap<>();
-        if(historiqueSubscribers == null) historiqueSubscribers = new HashMap<>();
-    }*/
-
-    @OnOpen // Quand un client arrive
+    /*
+        Methode qui s'exécute quand une connexion avec un client est créée
+     */
+    @OnOpen
     public void onOpen(Session session) throws IOException, EncodeException {
         this.session = session;
         webSocketServer.add(this);
         users.put(session.getId(), false);
     }
 
+    /*
+        Methode qui s'exécute quand le serveur reçoit un message de n'importe quel client
+     */
     @OnMessage
     public void onMessage(Session session, String str) throws IOException, EncodeException {
         String[] strSendWithSpace = str.split("\r?\n|\r");
@@ -48,14 +48,11 @@ public class WebSocketServer {
             }
         }
 
-
-
         if(strSend[0].equals("CONNECT")){
-            // TODO DEMANDE DE CONNEXION + ENVOYER QU'IL EST BIEN CONNECTE
             users = serverController.connect(users, session, strSend[1], strSend[2]);
         }
 
-        if(users.get(session.getId())){ // On regarde si il a bien fait la connexion avant autre chose
+        if(users.get(session.getId())){ // On regarde s'il a bien fait la connexion avant autre chose
             if(strSend[0].equals("SEND")){
                 ArrayList<HashMap> listeMaps = serverController.send(topics, subscribers, session, strSend[1],strSend[2],strSend[3]);
                 this.topics = listeMaps.get(0);
@@ -83,16 +80,13 @@ public class WebSocketServer {
         }
     }
 
-    @OnClose // Quand un client part
+    /*
+        Methode qui s'exécute quand une connexion avec un client est fermée
+     */
+    @OnClose
     public void onClose(Session session) throws IOException, EncodeException {
         users.remove(session.getId());
         webSocketServer.remove(this);
-    }
-
-    @OnError
-    public void onError(Session session, Throwable throwable) {
-        // Do error handling here
-        // Useless ?????
     }
 
     public ServerController getServerController() {
