@@ -1,6 +1,6 @@
 package fr.ul.miage.Application_ReseauJavaFX;
 
-import fr.ul.miage.Application_Reseau.ClientEndpoint;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -9,15 +9,22 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import org.glassfish.tyrus.client.ClientManager;
 
 import javax.websocket.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 
-
+@javax.websocket.ClientEndpoint
 public class Application_ReseauController {
+
+	private static Session ses;
+	private static String receipt;
+	private int indiceSubscribeTopic = 1;
 
 	@FXML
 	private ComboBox combo_listeTopic;
@@ -39,137 +46,129 @@ public class Application_ReseauController {
 	private HashMap<Integer, String> idSubscribeTopics;
 	
 	
-	public Application_ReseauController() {
-		tabPane_Topics = new TabPane();
-		topicsSub = new HashMap<>();
-		idSubscribeTopics = new HashMap<>();
+	public Application_ReseauController() throws URISyntaxException, DeploymentException {
+		ClientManager client = ClientManager.createClient();
+		URI uri = new URI("ws://127.0.0.1:9999/");
+		client.connectToServer(this, uri);
 	}
 
 	
 	@FXML
 	private void initialize() {
-		
-		
-		/*exemple ajout TabPane
-		Tab tab1 = new Tab("Planes", new Label("Show all planes available"));
-        Tab tab2 = new Tab("Cars"  , new Label("Show all cars available"));
-        Tab tab3 = new Tab("Boats" , new Label("Show all boats available"));
+		topicsSub = new HashMap<>();
+		idSubscribeTopics = new HashMap<>();
 
-        tabPane_Topics.getTabs().add(tab1);
-        tabPane_Topics.getTabs().add(tab2);
-        tabPane_Topics.getTabs().add(tab3);
-        */
-		sai_InfoExec.appendText(ClientEndpoint.getReceipt() + "\n");
+		sai_InfoExec.appendText(receipt + "\n");
 	}
 	
 	@FXML
 	public void actualiserTopics() throws IOException, InterruptedException {
-		ClientEndpoint.getSes().getBasicRemote().sendText("FUNCTION\ngetAllTopics\n^@");
-		String old_receipt = ClientEndpoint.getReceipt();
-		int i = 0;
-		while (ClientEndpoint.getReceipt().equals(old_receipt) && i < 1000){
+		ses.getBasicRemote().sendText("FUNCTION\ngetAllTopics\n^@");
+	}
 
-			old_receipt = ClientEndpoint.getReceipt();
-			System.out.println(ClientEndpoint.getReceipt() + " : " + i);
-			i++;
-		}
-		System.out.println();
-		System.out.println("ON A CHANGE DE RECEIPT");
-		System.out.println(ClientEndpoint.getReceipt());
-		String receipt = ClientEndpoint.getReceipt().substring(7);
-		String[] listeTopic = receipt.split("\r?\n|\r");
-		System.out.println("LISTE DE TOPIC :");
-		for(String str : listeTopic) {
-			if(!str.equals("^@")&&!str.equals("")){
+
+	public void updateListeTopic(String[] receipt_lines){
+		for(String str : receipt_lines) {
+			if(!str.equals("^@")&&!str.equals("RECEIPT")&&!str.equals("getAllTopics")){
 				if(!topicsSub.containsKey(str)){
 					topicsSub.put(str, false);
-					System.out.println("Nouvelle topic : " + str);
 					combo_listeTopic.getItems().add(str);
 				}
 			}
-
 		}
-		System.out.println("FIN LISTE");
 
 	}
 
 	@FXML
-	public void subscribe() throws IOException {
-		//subscribe ou unsubscribe
-		String destination = (String) combo_listeTopic.getValue();
-		if(destination != null){
-			if(topicsSub.get(destination)){ // Si je suis abonné alors ...
-				int idSuppr = -1;
-				for(int indice : idSubscribeTopics.keySet()){
-					if(idSubscribeTopics.get(indice).equals(destination)){
-						idSuppr = indice;
-						break;
+	public void updateTopics(String destination, String content){
+		int i = 0;
+		for(Tab t : tabPane_Topics.getTabs()){
+			if(t.getText().equals(destination)){
+				Label label = (Label) t.getContent();
+				Platform.runLater(new Runnable() {
+					@Override
+					public void run() {
+						label.setText(content + "\n" + label.getText());
 					}
-				}
-				ClientEndpoint.getSes().getBasicRemote().sendText(
-						"UNSUBSCRIBE\n" +
-								"id:"+ idSuppr + "\n" +
-								"^@");
-				String old_receipt = ClientEndpoint.getReceipt();
-				int i = 0;
-				while (ClientEndpoint.getReceipt().equals(old_receipt) && i < 1000){
-					old_receipt = ClientEndpoint.getReceipt();
-					System.out.println(ClientEndpoint.getReceipt() + " : " + i);
-					i++;
-				}
-				System.out.println();
-				System.out.println("ON A CHANGE DE RECEIPT");
-				System.out.println(ClientEndpoint.getReceipt());
-				idSubscribeTopics.remove(idSuppr);
-				topicsSub.put(destination, false);
-				for(Tab t : tabPane_Topics.getTabs()){
-					if(t.getText().equals(destination)){
-						tabPane_Topics.getTabs().remove(t);
-						break;
-					}
-				}
-				btn_aboDesabo.setText("S'abonner");
+				});
+				break;
+			}
+		}
+	}
 
-			} else {
-				int indiceSubscribeTopic = 1;
-				boolean isNotSub = true;
-				while (isNotSub){
-					ClientEndpoint.getSes().getBasicRemote().sendText(
+	@FXML
+	public void subscribeHandler() throws IOException {
+		subscribe(null);
+	}
+
+	@FXML
+	public void subscribe(String[] receipt_lines) throws IOException {
+		String destination = (String) combo_listeTopic.getValue();
+		if(receipt_lines == null){
+			if(destination != null){
+				if(topicsSub.get(destination)){ // Si je suis abonné alors ...
+					int idSuppr = -1;
+					for(int indice : idSubscribeTopics.keySet()){
+						if(idSubscribeTopics.get(indice).equals(destination)){
+							idSuppr = indice;
+							break;
+						}
+					}
+					ses.getBasicRemote().sendText(
+							"UNSUBSCRIBE\n" +
+									"id:"+ idSuppr + "\n" +
+									"^@");
+					idSubscribeTopics.remove(idSuppr);
+					topicsSub.put(destination, false);
+					for(Tab t : tabPane_Topics.getTabs()){
+						if(t.getText().equals(destination)){
+							tabPane_Topics.getTabs().remove(t);
+							break;
+						}
+					}
+					btn_aboDesabo.setText("S'abonner");
+				} else {
+					ses.getBasicRemote().sendText(
 							"SUBSCRIBE\n" +
 									"id:"+ indiceSubscribeTopic + "\n" +
 									"destination:" + destination + "\n" +
 									"ack:client\n" +
 									"^@");
-					String old_receipt = ClientEndpoint.getReceipt();
-					int i = 0;
-					while (ClientEndpoint.getReceipt().equals(old_receipt) && i < 1000){
-						old_receipt = ClientEndpoint.getReceipt();
-						System.out.println(ClientEndpoint.getReceipt() + " : " + i);
-						i++;
-					}
-					System.out.println();
-					System.out.println("ON A CHANGE DE RECEIPT");
-					System.out.println(ClientEndpoint.getReceipt());
-					String[] receipt = ClientEndpoint.getReceipt().split("\r?\n|\r");
-					if(receipt[0].equals("ERROR")){
-						if(receipt[2].equals("message:id already exist")){
-							indiceSubscribeTopic = indiceSubscribeTopic + 1;
-						}
-					} else {
-						isNotSub = false;
-						idSubscribeTopics.put(indiceSubscribeTopic, destination);
-						topicsSub.put(destination, true);
+				}
+			}
+		} else { // On a reçu un message pour subscribe
+			if(receipt_lines[0].equals("ERROR") && receipt_lines[2].equals("message:id already exist")){
+				indiceSubscribeTopic++;
+				ses.getBasicRemote().sendText(
+						"SUBSCRIBE\n" +
+								"id:"+ indiceSubscribeTopic + "\n" +
+								"destination:" + destination + "\n" +
+								"ack:client\n" +
+								"^@");
+			}
+			else if(receipt_lines[0].equals("RECEIPT") && receipt_lines[1].startsWith("receipt-id:subscribe")){
+				idSubscribeTopics.put(indiceSubscribeTopic, destination);
+				topicsSub.put(destination, true);
+				Platform.runLater(new Runnable() {
+					@Override
+					public void run() {
 						tabPane_Topics.getTabs().add(new Tab(destination, new Label("Début de la conversation...")));
 						btn_aboDesabo.setText("Se désabonner");
 					}
-				}
+				});
 			}
 		}
 	}
 	
 	@FXML
-	public void send() {
-		
+	public void send() throws IOException {
+		if(!sai_message.getText().equals("")){
+			ses.getBasicRemote().sendText("SEND\n" +
+					"destination:"+ sai_NomTopic.getText()  + "\n" +
+					"content-type:text/plain\n" +
+					sai_message.getText() + "\n" +
+					"^@");
+		}
 	}
 
 	@FXML
@@ -183,5 +182,44 @@ public class Application_ReseauController {
 			sai_NomTopic.setText((String) combo_listeTopic.getValue());
 		}
 	}
-	
+
+
+
+	@OnOpen
+	public void onOpen(Session session) throws IOException {
+		session.getBasicRemote().sendText("CONNECT\n" +
+				"accept-version:1.2\n" +
+				"host:127.0.0.1:9999\n" +
+				"^@");
+		ses = session;
+	}
+
+	@OnMessage
+	public void onMessage(String message, Session session) throws IOException {
+		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+		receipt = message;
+		String[] receipt_lines = receipt.split("\r?\n|\r");
+		if(receipt_lines[0].equals("MESSAGE")){
+			String destination = receipt_lines[3].substring(12);
+			String content = receipt_lines[5];
+			updateTopics(destination, content);
+		}
+		else if(receipt_lines[0].equals("RECEIPT") && receipt_lines[1].equals("getAllTopics")){
+			updateListeTopic(receipt_lines);
+		}
+		else if(receipt_lines[0].equals("ERROR") && receipt_lines[2].equals("message:id already exist")){
+			subscribe(receipt_lines);
+		}
+		else if(receipt_lines[0].equals("RECEIPT") && receipt_lines[1].startsWith("receipt-id:subscribe")){
+			subscribe(receipt_lines);
+		}
+	}
+
+	@OnClose
+	public void onClose(Session session, CloseReason closeReason) {
+		System.out.println("--- Session: " + session.getId());
+		System.out.println("--- Closing because: " + closeReason);
+	}
+
+
 }

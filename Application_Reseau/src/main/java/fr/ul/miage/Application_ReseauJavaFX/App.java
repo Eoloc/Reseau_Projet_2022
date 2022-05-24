@@ -10,10 +10,14 @@ import javafx.stage.Stage;
 
 public class App extends Application {
 
+	private static Application_ReseauController controller;
+
 	@Override
 	public void start(Stage primaryStage) {
 		primaryStage.setTitle("Application STOMP");
 		try {
+			FXMLLoader loader = new FXMLLoader();
+			loader.setController(controller);
 			Parent root = FXMLLoader.load(getClass().getResource("fenetre.fxml"));
 			Scene scene = new Scene(root);
 			primaryStage.setScene(scene);
@@ -23,7 +27,8 @@ public class App extends Application {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args, Application_ReseauController cll) {
+		controller = cll;
 		launch(args);
 	}
 }
