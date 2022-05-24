@@ -12,6 +12,10 @@ public class App extends Application {
 
 	private static Application_ReseauController controller;
 
+	/*
+	 Méthode start
+	 Cette méthode charge la fenêtre fxml créée et l'affiche à l'écran
+	 */
 	@Override
 	public void start(Stage primaryStage) {
 		primaryStage.setTitle("Application STOMP");
@@ -27,6 +31,14 @@ public class App extends Application {
 		}
 	}
 
+	
+	/*
+	 Méthode main de la classe App
+	 Paramètres :
+	 	Application_ReseauController : controller fxml
+	 	
+	 La méthode lance la méthode start de la même classe
+	 */
 	public static void main(String[] args, Application_ReseauController cll) {
 		controller = cll;
 		launch(args);
