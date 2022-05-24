@@ -14,18 +14,6 @@ Mac / Linux
 
 >Application Client : ./Application_Reseau/bindist/bin/Application_Reseau
 
-Dans le rendu :
-
-Windows
->Serveur : Serveur STOMP/bindist/bin/Reseau_Projet_2022.bat
-
->Application Client : Application Client/bindist/bin/Application_Reseau.bat
-
-Mac / Linux
->Serveur : Serveur STOMP/bindist/bin/Reseau_Projet_2022
-
->Application Client : Application Client/bindist/bin/Application_Reseau
-
 ## Serveur STOMP
 IP Serveur : 127.0.0.1
 
