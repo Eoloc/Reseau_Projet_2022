@@ -26,6 +26,7 @@ public class Application_ReseauController {
 	private static String receipt;
 	private int indiceSubscribeTopic = 1;
 
+	//Champs FXML
 	@FXML
 	private ComboBox combo_listeTopic;
 	@FXML
@@ -42,10 +43,14 @@ public class Application_ReseauController {
 	private TextArea sai_InfoExec;
 	@FXML
 	private TextField sai_NomTopic;
+	
 	private HashMap<String, Boolean> topicsSub;
 	private HashMap<Integer, String> idSubscribeTopics;
 	
-	
+	/*
+	 Constructeur du controller
+	 Renseigne l'uri, le port et initie la connexion au serveur
+	 */
 	public Application_ReseauController() throws URISyntaxException, DeploymentException {
 		ClientManager client = ClientManager.createClient();
 		URI uri = new URI("ws://127.0.0.1:9999/");
@@ -53,6 +58,11 @@ public class Application_ReseauController {
 	}
 
 	
+	/*
+	 Méthode initialize, exécutée après le constructeur au moment du chargement du fichier fxml
+	 On initialise les Map passée en attributs.
+	 On affiche aussi le résultat de la requête de connexion au serveur. Si une erreur est survenue, on le verra au lancement
+	 */
 	@FXML
 	private void initialize() {
 		topicsSub = new HashMap<>();
@@ -61,12 +71,24 @@ public class Application_ReseauController {
 		sai_InfoExec.appendText(receipt + "\n");
 	}
 	
+	/*
+	 Méthode actualiserTopics,
+	 cette méthode est appelée par le bouton "Actualiser", elle envoie un message au serveur
+	 
+	 On utilise ici la frame FUNCTION et on passe en attribut le nom de méthode "getAllTopics",
+	 le fait d'envoyer cette frame déclenchera le traitement "OnMessage" de notre serveur
+	 */
 	@FXML
 	public void actualiserTopics() throws IOException, InterruptedException {
 		ses.getBasicRemote().sendText("FUNCTION\ngetAllTopics\n^@");
 	}
 
-
+	/*
+	 Méthode updateListeTopic,
+	 cette méthode est appelée lorsque le serveur recoit la frame FUNCTION envoyée par le bouton "Actualiser"
+	 
+	 On met à jour la liste déroulante
+	 */
 	public void updateListeTopic(String[] receipt_lines){
 		for(String str : receipt_lines) {
 			if(!str.equals("^@")&&!str.equals("RECEIPT")&&!str.equals("getAllTopics")){
@@ -78,8 +100,11 @@ public class Application_ReseauController {
 		}
 
 	}
-
-	@FXML
+	
+	/*
+	 Méthode updateTopics
+	 cette méthode met à jour le contenu des onglet associé à chaque topic auquelles l'utilisateur est abonné
+	 */
 	public void updateTopics(String destination, String content){
 		int i = 0;
 		for(Tab t : tabPane_Topics.getTabs()){
@@ -95,12 +120,20 @@ public class Application_ReseauController {
 			}
 		}
 	}
-
+	
 	@FXML
 	public void subscribeHandler() throws IOException {
 		subscribe(null);
 	}
 
+	/*
+	 Méthode subscribe,
+	 appelée par le bouton "S'abonner", elle permet à l'utilisateur de s'abonner ou de se désabonner selon le fait qu'il le soit déjà ou non
+	 
+	 La méthode envoi un message au serveur avec l'entête SUBSCRIBE ou UNSUBSCRIBE
+	 Le traitement se fait ensuite dans le OnMessage du serveur
+	 L'abonnement/Désabonnement met à jour les onglet disponibles en ajoutant ou retirant la topic concernée par le traitement
+	 */
 	@FXML
 	public void subscribe(String[] receipt_lines) throws IOException {
 		String destination = (String) combo_listeTopic.getValue();
@@ -160,17 +193,36 @@ public class Application_ReseauController {
 		}
 	}
 	
+	/*
+	 Méthode send,
+	 appelée par le bouton "envoyer message"
+	 
+	 Cette méthode envoi un message au serveur avec l'entête SEND
+	 Le traitement sera fait dans le onMessage du serveur
+	 */
 	@FXML
 	public void send() throws IOException {
-		if(!sai_message.getText().equals("")){
+		if(!sai_message.getText().equals("") && !sai_NomTopic.getText().equals("")){
 			ses.getBasicRemote().sendText("SEND\n" +
 					"destination:"+ sai_NomTopic.getText()  + "\n" +
 					"content-type:text/plain\n" +
 					sai_message.getText() + "\n" +
 					"^@");
+			if(!combo_listeTopic.getItems().contains(sai_NomTopic.getText())) {
+				sai_InfoExec.appendText("La topic à été créée, pensez à rafraichir la liste déroulante afin qu'elle apparaisse.\n");
+			}
+		}else {
+			sai_InfoExec.appendText("Erreur : Merci de renseigner un message et un nom de queue avant d'envoyer.\n");
 		}
 	}
 
+	
+	/*
+	 Méthode changeBtnSubscribeLabel,
+	 cette méthode change le message du bouton s'abonner de "S'abonner" à "Se désabonner"
+	 
+	 Cette méthode est appelé à la sélection d'un élément de la liste déroulante
+	 */
 	@FXML
 	public void changeBtnSubscribeLabel(){
 		if((String) combo_listeTopic.getValue() != null){
@@ -184,7 +236,11 @@ public class Application_ReseauController {
 	}
 
 
-
+	/*
+	 Traitement OnOpen, s'exécute à l'ouverture de la connexion
+	 
+	 Lors de l'ouverture, une frame de connexion est envoyée
+	 */
 	@OnOpen
 	public void onOpen(Session session) throws IOException {
 		session.getBasicRemote().sendText("CONNECT\n" +
@@ -194,6 +250,11 @@ public class Application_ReseauController {
 		ses = session;
 	}
 
+	/*
+	 Traitement OnMessage, s'exécute quand on reçoit un message
+	 
+	 Lorsqu'un message est reçu, on récupère le résultat et on exécute la méthode adaptée
+	 */
 	@OnMessage
 	public void onMessage(String message, Session session) throws IOException {
 		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
@@ -215,6 +276,11 @@ public class Application_ReseauController {
 		}
 	}
 
+	/*
+	 Traitement OnClose, s'exécute à la fermeture de la connexion
+	 
+	 A la fermenure, on affiche un message
+	 */
 	@OnClose
 	public void onClose(Session session, CloseReason closeReason) {
 		System.out.println("--- Session: " + session.getId());
